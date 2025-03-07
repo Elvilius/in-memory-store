@@ -6,23 +6,23 @@ import (
 	"go.uber.org/zap"
 )
 
-type Engineer interface {
+type EngineInterface interface {
 	Set(key string, value string)
 	Get(key string) (string, bool)
 	Del(key string)
 }
 
-type Computer interface {
+type ComputeInterface interface {
 	Parse(cmd string) (compute.PreparedCommand, error)
 }
 
 type DB struct {
-	engine  Engineer
-	compute Computer
+	engine  EngineInterface
+	compute ComputeInterface
 	logger  *zap.Logger
 }
 
-func New(logger *zap.Logger, engine Engineer, compute Computer) *DB {
+func New(logger *zap.Logger, engine EngineInterface, compute ComputeInterface) *DB {
 	return &DB{
 		engine:  engine,
 		compute: compute,

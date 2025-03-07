@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const paramsLen = 2
+
 type Compute struct {
 	logger *zap.Logger
 }
@@ -33,7 +35,7 @@ func (c *Compute) Parse(rawCmd string) (PreparedCommand, error) {
 	preparedCommand.Cmd = command
 	preparedCommand.Key = params[1]
 
-	if len(params) > 2 {
+	if len(params) > paramsLen {
 		preparedCommand.Value = params[2]
 	}
 	return preparedCommand, nil
