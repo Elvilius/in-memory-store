@@ -19,7 +19,7 @@ func TestCompute_Parse(t *testing.T) {
 	}{
 		{
 			name: "Successful SET command ", args: args{cmd: "SET weather_2_pm cold_moscow_weather"}, want: PreparedCommand{
-				Cmd:  COMMAND("SET"),
+				Cmd:  command("SET"),
 				Key:  "weather_2_pm",
 				Value: "cold_moscow_weather",
 			},
@@ -27,14 +27,14 @@ func TestCompute_Parse(t *testing.T) {
 		},
 		{
 			name: "Successful GET command", args: args{cmd: "GET weather_2_pm"}, want: PreparedCommand{
-				Cmd: COMMAND("GET"),
+				Cmd: command("GET"),
 				Key: "weather_2_pm",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Successful DEL command", args: args{cmd: "DEL weather_2_pm"}, want: PreparedCommand{
-				Cmd: COMMAND("DEL"),
+				Cmd: command("DEL"),
 				Key: "weather_2_pm",
 			},
 			wantErr: false,

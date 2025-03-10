@@ -4,22 +4,22 @@ import (
 	"fmt"
 )
 
-type COMMAND string
+type command string
 
 const (
-	SET COMMAND = "SET"
-	GET COMMAND = "GET"
-	DEL COMMAND = "DEL"
+	SET command = "SET"
+	GET command = "GET"
+	DEL command = "DEL"
 )
 
 type PreparedCommand struct {
-	Cmd  COMMAND
+	Cmd  command
 	Key  string
 	Value string
 }
 
-func findCommand(str string) (COMMAND, error) {
-	switch COMMAND(str) {
+func findCommand(str string) (command, error) {
+	switch command(str) {
 	case SET:
 		return SET, nil
 	case GET:
