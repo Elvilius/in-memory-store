@@ -5,26 +5,33 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Elvilius/in-memory-store/internal/db"
-	"github.com/Elvilius/in-memory-store/internal/db/compute"
-	"github.com/Elvilius/in-memory-store/internal/db/engine"
+	"github.com/Elvilius/in-memory-store/internal/client"
+	"github.com/Elvilius/in-memory-store/internal/config"
 	"go.uber.org/zap"
 )
 
-func main() {
-	logger := zap.New(nil)
-	engine := engine.New()
-	compute := compute.New(logger)
 
-	db := db.New(
-		logger,
-		engine,
-		compute,
-	)
+func main() {
+	logger, _:= zap.NewDevelopment()
+	config, err := config.New()
+	if err != nil {
+		logger.Sugar().Fatalln(err)
+	}
 	scanner := bufio.NewScanner(os.Stdin)
+
+	client, err := client.NewTCPClient(*config)
+	if err != nil {
+		logger.Sugar().Fatalln(err)
+	}
+
 	fmt.Print("> ")
 	for scanner.Scan() {
-		fmt.Println(db.CommandHandle(scanner.Text()))
+		res, err := client.Send([]byte(scanner.Text()))
+		if err != nil {
+			logger.Sugar().Errorln(err)
+		} else {
+			fmt.Println(string(res))
+		}
 		fmt.Print("> ")
 	}
 
