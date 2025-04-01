@@ -9,9 +9,10 @@ import (
 
 type TCPClient struct {
 	conn net.Conn
+	cfg  *config.Config
 }
 
-func NewTCPClient(config config.Config) (*TCPClient, error) {
+func NewTCPClient(config *config.Config) (*TCPClient, error) {
 	conn, err := net.Dial("tcp", config.Network.Address)
 	if err != nil {
 		return nil, err
@@ -19,6 +20,7 @@ func NewTCPClient(config config.Config) (*TCPClient, error) {
 
 	return &TCPClient{
 		conn: conn,
+		cfg:  config,
 	}, nil
 }
 
@@ -27,7 +29,7 @@ func (c *TCPClient) Send(message []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	response := make([]byte, 4<<10)
+	response := make([]byte, c.cfg.Network.BufferSize)
 	count, err := c.conn.Read(response)
 	if err != nil && err != io.EOF {
 		return nil, err

@@ -13,13 +13,13 @@ import (
 
 func main() {
 	logger, _:= zap.NewDevelopment()
-	config, err := config.New()
+	cfg, err := config.New()
 	if err != nil {
 		logger.Sugar().Fatalln(err)
 	}
 	scanner := bufio.NewScanner(os.Stdin)
 
-	client, err := client.NewTCPClient(*config)
+	client, err := client.NewTCPClient(cfg)
 	if err != nil {
 		logger.Sugar().Fatalln(err)
 	}

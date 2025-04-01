@@ -49,32 +49,13 @@ func (s *TCPServer) Run(ctx context.Context) {
 			}
 
 			s.connectionCount <- struct{}{}
-
-			go func(c net.Conn) {
-
+			go func() {
 				defer func() {
 					<-s.connectionCount
 				}()
 
-
-				request := make([]byte, 4<<10)
-				count, err := conn.Read(request)
-
-
-				if err != nil {
-					s.logger.Sugar().Errorln(err)
-				}
-
-				res := s.db.CommandHandle(string(request[:count]))
-				if _, err := conn.Write([]byte(res)); err != nil {
-					s.logger.Warn(
-						"failed to write data",
-						zap.String("address", conn.RemoteAddr().String()),
-						zap.Error(err),
-					)
-				}
-
-			}(conn)
+				s.queryHandler(conn)
+			}()
 
 		}
 	}()
@@ -82,6 +63,26 @@ func (s *TCPServer) Run(ctx context.Context) {
 	<-ctx.Done()
 	close(s.connectionCount)
 	wg.Wait()
+}
 
+func (s *TCPServer) queryHandler(conn net.Conn) {
+	defer func() {
+		<-s.connectionCount
+	}()
 
+	request := make([]byte, s.cfg.Network.BufferSize)
+	count, err := conn.Read(request)
+
+	if err != nil {
+		s.logger.Sugar().Errorln(err)
+	}
+
+	res := s.db.CommandHandle(string(request[:count]))
+	if _, err := conn.Write([]byte(res)); err != nil {
+		s.logger.Warn(
+			"failed to write data",
+			zap.String("address", conn.RemoteAddr().String()),
+			zap.Error(err),
+		)
+	}
 }

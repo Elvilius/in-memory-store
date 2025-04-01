@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -23,6 +24,7 @@ type Network struct {
 	MaxConnections int           `yaml:"max_connections"`
 	MaxMessageSize string        `yaml:"max_message_size"`
 	IdleTimeout    time.Duration `yaml:"idle_timeout"`
+	BufferSize     int           `yaml:"buffer_size"`
 }
 
 type Logging struct {
@@ -36,19 +38,26 @@ func New() (*Config, error) {
 		return nil, err
 	}
 
-	var config Config
+	var cfg Config
 
-	if err := yaml.Unmarshal(data, &config); err != nil {
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
-	return &config, nil
+
+	if cfg.Network.MaxConnections == 0 {
+		return nil, fmt.Errorf("cfg.Network.MaxConnections must be > 0")
+	}
+
+	if cfg.Network.BufferSize == 0 {
+		cfg.Network.BufferSize = 4 << 10 // 4096
+	}
+	return &cfg, nil
 }
 
-
 func getConfigPath() string {
-    path := os.Getenv("CONFIG_PATH")
-    if path == "" {
-        path = "./config.yaml"
-    }
-    return path
+	path := os.Getenv("CONFIG_PATH")
+	if path == "" {
+		path = "./config.yaml"
+	}
+	return path
 }

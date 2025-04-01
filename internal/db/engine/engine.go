@@ -13,6 +13,7 @@ func New() *Engine {
 	}
 }
 
+
 func (e *Engine) Set(key string, value string) {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
