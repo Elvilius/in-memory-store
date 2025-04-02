@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -42,10 +41,6 @@ func New() (*Config, error) {
 
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, err
-	}
-
-	if cfg.Network.MaxConnections == 0 {
-		return nil, fmt.Errorf("cfg.Network.MaxConnections must be > 0")
 	}
 
 	if cfg.Network.BufferSize == 0 {

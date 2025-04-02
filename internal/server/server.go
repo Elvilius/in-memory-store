@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"io"
 	"net"
 	"sync"
 
@@ -24,13 +25,19 @@ func NewTCPServer(cfg *config.Config, db *db.DB, logger *zap.Logger) (*TCPServer
 		return nil, err
 	}
 
-	return &TCPServer{
+	tcpServer := &TCPServer{
 		cfg:             cfg,
 		db:              db,
 		logger:          logger,
 		listener:        listener,
-		connectionCount: make(chan struct{}, cfg.Network.MaxConnections),
-	}, nil
+		connectionCount: nil,
+	}
+
+	if cfg.Network.MaxConnections != 0 {
+		tcpServer.connectionCount = make(chan struct{}, cfg.Network.MaxConnections)
+	}
+
+	return tcpServer, nil
 }
 
 func (s *TCPServer) Run(ctx context.Context) {
@@ -48,10 +55,10 @@ func (s *TCPServer) Run(ctx context.Context) {
 				continue
 			}
 
-			s.connectionCount <- struct{}{}
+			s.Wait()
 			go func() {
 				defer func() {
-					<-s.connectionCount
+					s.Signal()
 				}()
 
 				s.queryHandler(conn)
@@ -61,28 +68,50 @@ func (s *TCPServer) Run(ctx context.Context) {
 	}()
 
 	<-ctx.Done()
-	close(s.connectionCount)
+	s.CloseConnectionCount()
 	wg.Wait()
 }
 
 func (s *TCPServer) queryHandler(conn net.Conn) {
-	defer func() {
-		<-s.connectionCount
-	}()
+	defer conn.Close()
+	buf := make([]byte, s.cfg.Network.BufferSize)
 
-	request := make([]byte, s.cfg.Network.BufferSize)
-	count, err := conn.Read(request)
+	for {
+		count, err := conn.Read(buf)
+		if err != nil {
+			if err == io.EOF {
+				s.logger.Info("client disconnected", zap.String("address", conn.RemoteAddr().String()))
+			} else {
+				s.logger.Error("failed to read from connection", zap.Error(err))
+			}
+			break
+		}
 
-	if err != nil {
-		s.logger.Sugar().Errorln(err)
+		request := string(buf[:count])
+		response := s.db.CommandHandle(request)
+
+		_, err = conn.Write([]byte(response))
+		if err != nil {
+			s.logger.Warn("failed to write response", zap.String("address", conn.RemoteAddr().String()), zap.Error(err))
+			break
+		}
 	}
+}
 
-	res := s.db.CommandHandle(string(request[:count]))
-	if _, err := conn.Write([]byte(res)); err != nil {
-		s.logger.Warn(
-			"failed to write data",
-			zap.String("address", conn.RemoteAddr().String()),
-			zap.Error(err),
-		)
+func (s *TCPServer) Wait() {
+	if s.connectionCount != nil {
+		s.connectionCount <- struct{}{}
+	}
+}
+
+func (s *TCPServer) Signal() {
+	if s.connectionCount != nil {
+		<-s.connectionCount
+	}
+}
+
+func (s *TCPServer) CloseConnectionCount() {
+	if s.connectionCount != nil {
+		close(s.connectionCount)
 	}
 }
