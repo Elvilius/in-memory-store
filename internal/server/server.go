@@ -68,7 +68,10 @@ func (s *TCPServer) Run(ctx context.Context) {
 	}()
 
 	<-ctx.Done()
-	s.CloseConnectionCount()
+
+	if s.connectionCount != nil {
+		close(s.connectionCount)
+	}
 	wg.Wait()
 }
 
@@ -107,11 +110,5 @@ func (s *TCPServer) Wait() {
 func (s *TCPServer) Signal() {
 	if s.connectionCount != nil {
 		<-s.connectionCount
-	}
-}
-
-func (s *TCPServer) CloseConnectionCount() {
-	if s.connectionCount != nil {
-		close(s.connectionCount)
 	}
 }
