@@ -31,7 +31,7 @@ func New(logger *zap.Logger, engine EngineInterface, compute ComputeInterface) *
 }
 
 func (db *DB) CommandHandle(cmd string) string {
-	db.logger.Info("Start parsing command:")
+	db.logger.Info("Start parsing command:", zap.Any("cmd", cmd))
 
 	preparedCmd, err := db.compute.Parse(cmd)
 	if err != nil {
